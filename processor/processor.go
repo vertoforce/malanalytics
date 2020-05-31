@@ -1,14 +1,17 @@
 package processor
 
 import (
-	"fmt"
+	log "github.com/sirupsen/logrus"
+
+	"github.com/pimmytrousers/malanalytics/collector/sources"
 )
 
-func GatherMetadata(sampleSrc chan []byte) error {
-	fmt.Println("getting ready to process")
+// GatherMetadata takes the incoming malware samples and runs analytics on those samples
+func GatherMetadata(sampleSrc chan *sources.Malware) error {
+	log.Debug("getting ready to process")
 	for sample := range sampleSrc {
 		// time.Sleep(time.Second * 10)
-		fmt.Printf("Mock sample: %v\n", sample)
+		log.Printf("Mock sample: %v\n", sample.RawBytes)
 	}
 
 	return nil
