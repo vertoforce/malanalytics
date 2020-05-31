@@ -12,16 +12,16 @@ type Malbazaar struct {
 	SampleStream chan *malware.Malware
 }
 
-// ShareMalChannel SHOULD share set the channel to the same one being used by the collector struct
-func (m *Malbazaar) GetChan() chan *malware.Malware {
+// MalwareChannel Source of malware from malbazaar
+func (m *Malbazaar) MalwareChannel() chan *malware.Malware {
 	if m.SampleStream == nil {
 		m.SampleStream = make(chan *malware.Malware)
 	}
 	return m.SampleStream
 }
 
-// GetSamples is a mock of how the samples will be pushed through the pipe
-func (m *Malbazaar) GetSamples() error {
+// Start just pumps mock samples for now
+func (m *Malbazaar) Start() error {
 	for {
 		mockSample := make([]byte, 4)
 		_, err := rand.Read(mockSample)
