@@ -1,6 +1,8 @@
 package main
 
 import (
+	"time"
+
 	"github.com/pimmytrousers/malanalytics/collector"
 	"github.com/pimmytrousers/malanalytics/processor"
 	log "github.com/sirupsen/logrus"
@@ -19,6 +21,7 @@ func main() {
 	}
 
 	go malsrc.GetSamples()
+	time.Sleep(time.Second)
 
 	err = processor.GatherMetadata(malsrc.SampleStream)
 	if err != nil {
