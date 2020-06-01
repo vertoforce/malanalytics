@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/pimmytrousers/malanalytics/collector"
+	"github.com/pimmytrousers/malanalytics/postactions"
 	"github.com/pimmytrousers/malanalytics/processor"
 	log "github.com/sirupsen/logrus"
 )
@@ -19,9 +20,12 @@ func main() {
 	// Start processing samples
 	malsrc.Start()
 
-	// Take our malware stream and process metadata for it
-	err = processor.GatherMetadata(malsrc.SampleStream)
+	proc, err := processor.New(processor.Processors, malsrc.SampleStream)
 	if err != nil {
 		panic(err)
 	}
+
+	go proc.Start()
+
+	postactions.PostActions(proc.EnrichedSampleStream)
 }

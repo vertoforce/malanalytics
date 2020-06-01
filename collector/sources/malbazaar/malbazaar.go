@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/pimmytrousers/malanalytics/collector/malware"
-	log "github.com/sirupsen/logrus"
 )
 
 type Malbazaar struct {
@@ -31,7 +30,6 @@ func (m *Malbazaar) Start() error {
 		time.Sleep(time.Second * 1)
 		sample := &malware.Malware{}
 		sample.RawBytes = mockSample
-		log.Debugf("sending sample %v through chan", sample.RawBytes)
 		m.SampleStream <- sample
 	}
 }

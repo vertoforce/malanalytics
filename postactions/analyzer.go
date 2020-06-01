@@ -1,11 +1,11 @@
-package analyzer
+package postactions
 
 import (
 	"github.com/pimmytrousers/malanalytics/collector/malware"
 	log "github.com/sirupsen/logrus"
 )
 
-func Analyze(sampleSrc <-chan *malware.Malware) error {
+func PostActions(sampleSrc <-chan *malware.Malware) error {
 	for sample := range sampleSrc {
 		// time.Sleep(time.Second * 10)
 		log.WithFields(log.Fields{
