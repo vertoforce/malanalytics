@@ -4,7 +4,8 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/pimmytrousers/malanalytics/collector/sources"
+	"github.com/pimmytrousers/malanalytics/collector/malware"
+	"github.com/pimmytrousers/malanalytics/collector/sources/malbazaar"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -17,30 +18,30 @@ const (
 
 type malwareSource interface {
 	GetSamples() error
-	GetChan() chan *sources.Malware
+	GetChan() chan *malware.Malware
 }
 
 // Collector is the main type that is returned, the channel under Collector is the pipe where all the malware goes
 type Collector struct {
-	differentSources map[SourceID]malwareSource
-	orderedKeys      []SourceID
-	SampleStream     chan *sources.Malware
+	selectedSources map[SourceID]malwareSource
+	SampleStream    chan *malware.Malware
 }
 
-var totalSources map[SourceID]malwareSource
+// allSources is a map of all our sources by source id
+var allSources map[SourceID]malwareSource
 
 func init() {
-	totalSources = map[SourceID]malwareSource{
-		Malbazaar: sources.Malbazaar{},
+	allSources = map[SourceID]malwareSource{
+		Malbazaar: &malbazaar.Malbazaar{},
 	}
 }
 
-func merge(cs ...chan *sources.Malware) chan *sources.Malware {
-	out := make(chan *sources.Malware)
+func merge(cs ...chan *malware.Malware) chan *malware.Malware {
+	out := make(chan *malware.Malware)
 	var wg sync.WaitGroup
 	wg.Add(len(cs))
 	for _, c := range cs {
-		go func(c <-chan *sources.Malware) {
+		go func(c <-chan *malware.Malware) {
 			for v := range c {
 				out <- v
 			}
@@ -56,15 +57,15 @@ func merge(cs ...chan *sources.Malware) chan *sources.Malware {
 
 // GetSamples starts each sources GetSample in a goroutine. These goroutines will start sending malware samples through the channel
 func (c *Collector) GetSamples() error {
-	chans := []chan *sources.Malware{}
-	for _, src := range c.differentSources {
+	chans := []chan *malware.Malware{}
+	for _, src := range c.selectedSources {
 		chans = append(chans, src.GetChan())
 	}
 	singleChan := merge(chans...)
 
 	c.SampleStream = singleChan
 
-	for k, src := range c.differentSources {
+	for k, src := range c.selectedSources {
 		log.Debugf("starting go routine for %s", k)
 		go src.GetSamples()
 	}
@@ -76,16 +77,15 @@ func (c *Collector) GetSamples() error {
 func New(sourceIDs []SourceID, maxSamples int) (*Collector, error) {
 	c := &Collector{}
 
-	ch := make(chan *sources.Malware, maxSamples)
+	ch := make(chan *malware.Malware, maxSamples)
 	c.SampleStream = ch
 
-	c.differentSources = map[SourceID]malwareSource{}
+	c.selectedSources = map[SourceID]malwareSource{}
 
 	for _, sourceKey := range sourceIDs {
-		if _, ok := totalSources[sourceKey]; ok {
+		if _, ok := allSources[sourceKey]; ok {
 			log.Debugf("initializing source %s", sourceKey)
-			c.orderedKeys = append(c.orderedKeys, sourceKey)
-			c.differentSources[sourceKey] = totalSources[sourceKey]
+			c.selectedSources[sourceKey] = allSources[sourceKey]
 		} else {
 			return nil, fmt.Errorf("unknown parser type %d", sourceKey)
 		}
