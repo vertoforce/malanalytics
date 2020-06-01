@@ -7,7 +7,6 @@ import (
 
 func PostActions(sampleSrc <-chan *malware.Malware) error {
 	for sample := range sampleSrc {
-		// time.Sleep(time.Second * 10)
 		log.WithFields(log.Fields{
 			"Content": sample.RawBytes,
 			"MD5":     sample.MD5,

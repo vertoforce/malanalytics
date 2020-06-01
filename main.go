@@ -2,8 +2,8 @@ package main
 
 import (
 	"github.com/pimmytrousers/malanalytics/collector"
+	"github.com/pimmytrousers/malanalytics/enrichment"
 	"github.com/pimmytrousers/malanalytics/postactions"
-	"github.com/pimmytrousers/malanalytics/processor"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -17,14 +17,15 @@ func main() {
 		panic(err)
 	}
 
-	// Start processing samples
+	// Start collecting samples
 	malsrc.Start()
 
-	proc, err := processor.New(processor.Processors, malsrc.SampleStream)
+	proc, err := enrichment.New(enrichment.EnrichmentServices, malsrc.SampleStream)
 	if err != nil {
 		panic(err)
 	}
 
+	// Start enriching samples
 	go proc.Start()
 
 	postactions.PostActions(proc.EnrichedSampleStream)
