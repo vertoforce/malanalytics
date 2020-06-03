@@ -1,24 +1,40 @@
 package main
 
 import (
-	"github.com/pimmytrousers/malanalytics/collector"
-	"github.com/pimmytrousers/malanalytics/enrichment"
-	"github.com/pimmytrousers/malanalytics/postactions"
+	"flag"
+
+	"github.com/pimmytrousers/melk/collector"
+	"github.com/pimmytrousers/melk/enrichment"
+	"github.com/pimmytrousers/melk/postactions"
 	log "github.com/sirupsen/logrus"
 )
 
+var configPath string
+
 func init() {
 	log.SetLevel(log.DebugLevel)
+	flag.StringVar(&configPath, "config", "./example.yml", "config file for the service")
 }
 
 func main() {
+	flag.Parse()
+	logger := log.New()
+
+	c, err := getConf(configPath)
+
+	logger.Info(c)
+
+	if err != nil {
+		log.Fatalf("failed to acquire config: %s", err)
+	}
+
 	malsrc, err := collector.New(collector.Sources)
 	if err != nil {
 		panic(err)
 	}
 
 	// Start collecting samples
-	malsrc.Start()
+	malsrc.Start(logger)
 
 	proc, err := enrichment.New(enrichment.EnrichmentServices, malsrc.SampleStream)
 	if err != nil {
@@ -26,7 +42,7 @@ func main() {
 	}
 
 	// Start enriching samples
-	go proc.Start()
+	go proc.Start(logger)
 
-	postactions.PostActions(proc.EnrichedSampleStream)
+	postactions.PostActions(logger, proc.EnrichedSampleStream)
 }

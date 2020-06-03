@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/pimmytrousers/malanalytics/collector/malware"
+	"github.com/pimmytrousers/melk/collector/malware"
 )
 
 type Static struct{}

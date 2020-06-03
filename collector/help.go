@@ -3,7 +3,7 @@ package collector
 import (
 	"sync"
 
-	"github.com/pimmytrousers/malanalytics/collector/malware"
+	"github.com/pimmytrousers/melk/collector/malware"
 )
 
 // merge merges multiple malware channels to one

@@ -4,7 +4,11 @@ import (
 	"crypto/rand"
 	"time"
 
-	"github.com/pimmytrousers/malanalytics/collector/malware"
+	"github.com/pimmytrousers/melk/collector/malware"
+)
+
+const (
+	src = "malbazaar"
 )
 
 type Malbazaar struct {
@@ -29,6 +33,7 @@ func (m *Malbazaar) Start() error {
 		}
 		time.Sleep(time.Second * 1)
 		sample := &malware.Malware{}
+		sample.Src = src
 		sample.RawBytes = mockSample
 		m.SampleStream <- sample
 	}

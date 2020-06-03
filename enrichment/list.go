@@ -1,6 +1,6 @@
 package enrichment
 
-import "github.com/pimmytrousers/malanalytics/enrichment/services/static"
+import "github.com/pimmytrousers/melk/enrichment/services/static"
 
 var EnrichmentServices = []EnrichmentService{
 	&static.Static{},

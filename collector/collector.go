@@ -1,7 +1,7 @@
 package collector
 
 import (
-	"github.com/pimmytrousers/malanalytics/collector/malware"
+	"github.com/pimmytrousers/melk/collector/malware"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -12,7 +12,7 @@ type Collector struct {
 }
 
 // Start gets malware from each malware source and aggregates to one channel
-func (c *Collector) Start() error {
+func (c *Collector) Start(logger *log.Logger) error {
 	malwareChannels := []chan *malware.Malware{}
 	for _, src := range c.selectedSources {
 		malwareChannels = append(malwareChannels, src.MalwareChannel())
@@ -22,7 +22,7 @@ func (c *Collector) Start() error {
 	c.SampleStream = masterMalwareChannel
 
 	for k, src := range c.selectedSources {
-		log.Debugf("starting go routine for %s", k)
+		logger.Debugf("starting go routine for %s", k)
 		go src.Start()
 	}
 

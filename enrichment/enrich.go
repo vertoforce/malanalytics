@@ -1,7 +1,7 @@
 package enrichment
 
 import (
-	"github.com/pimmytrousers/malanalytics/collector/malware"
+	"github.com/pimmytrousers/melk/collector/malware"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -25,8 +25,8 @@ func New(services []EnrichmentService, incomingStream chan *malware.Malware) (*E
 	return e, nil
 }
 
-func (e *EnrichmentEngine) Start() error {
-	log.Debug("getting ready to process")
+func (e *EnrichmentEngine) Start(logger *log.Logger) error {
+	logger.Debug("getting ready to process")
 	for sample := range e.incomingStream {
 		for _, processor := range e.selectedServices {
 			err := processor.Enrich(sample)
