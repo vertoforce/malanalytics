@@ -26,7 +26,7 @@ func New(services []EnrichmentService, incomingStream chan *malware.Malware) (*E
 }
 
 func (e *EnrichmentEngine) Start(logger *log.Logger) error {
-	logger.Debug("getting ready to process")
+	logger.Info("getting ready to process")
 	for sample := range e.incomingStream {
 		for _, processor := range e.selectedServices {
 			err := processor.Enrich(sample)

@@ -1,40 +1,15 @@
 package malbazaar
 
 import (
-	"crypto/rand"
-	"encoding/json"
+	"context"
 	"io/ioutil"
-	"net/http"
-	"net/url"
-	"strings"
 	"time"
 
+	log "github.com/sirupsen/logrus"
+
 	"github.com/pimmytrousers/melk/collector/malware"
+	baz "github.com/vertoforce/go-malwarebazaar"
 )
-
-type MalbazaarResp struct {
-	QueryStatus string            `json:"query_status"`
-	Samples     []MalBazaarSample `json:"data"`
-}
-
-type MalBazaarSample struct {
-	Sha256Hash   string   `json:"sha256_hash"`
-	Sha1Hash     string   `json:"sha1_hash"`
-	Md5Hash      string   `json:"md5_hash"`
-	FirstSeen    string   `json:"first_seen"`
-	LastSeen     string   `json:"last_seen"`
-	FileName     string   `json:"file_name"`
-	FileSize     int      `json:"file_size"`
-	FileTypeMIME string   `json:"file_type_mime"`
-	FileType     string   `json:"file_type"`
-	Reporter     string   `json:"reporter"`
-	Anonymous    int      `json:"anonymous"`
-	Signature    string   `json:"signature"`
-	Imphash      string   `json:"imphash"`
-	Tlsh         string   `json:"tlsh"`
-	Ssdeep       string   `json:"ssdeep"`
-	Tags         []string `json:"tags"`
-}
 
 const (
 	src = "malbazaar"
@@ -42,7 +17,7 @@ const (
 
 type Malbazaar struct {
 	ExternalSampleStream chan *malware.Malware
-	stream               chan *MalBazaarSample
+	stream               chan *baz.Entry
 	SeenQueue            *keyQueue
 }
 
@@ -55,26 +30,35 @@ func (m *Malbazaar) MalwareChannel() chan *malware.Malware {
 }
 
 // Start just pumps mock samples for now
-func (m *Malbazaar) Start() error {
+func (m *Malbazaar) Start(logger *log.Logger) error {
 	q := newKeyQueue(1000)
 	m.SeenQueue = q
 
-	m.stream = make(chan *MalBazaarSample)
+	m.stream = make(chan *baz.Entry)
 	go m.startSampleChurn()
 
 	for s := range m.stream {
-
-		mockSample := make([]byte, 4)
-		_, err := rand.Read(mockSample)
+		rc, err := baz.Download(context.Background(), s.Sha256Hash)
 		if err != nil {
-			return err
+			continue
 		}
-		// time.Sleep(time.Millisecond * 250)
+
+		decryptedCloser, err := baz.GetRawFile(rc)
+		if err != nil {
+			continue
+		}
+
+		rawBytes, err := ioutil.ReadAll(decryptedCloser)
+		if err != nil {
+			continue
+		}
+
 		sample := &malware.Malware{}
 		sample.Src = src
-		sample.RawBytes = mockSample
+		sample.RawBytes = rawBytes
 		sample.Tags = s.Tags
 		sample.FileName = s.FileName
+		sample.Family = s.Signature
 		sample.FileType = s.FileType
 		sample.SsDeep = s.Ssdeep
 		m.ExternalSampleStream <- sample
@@ -84,37 +68,18 @@ func (m *Malbazaar) Start() error {
 }
 
 func (m *Malbazaar) startSampleChurn() error {
-	baseUrl := "https://mb-api.abuse.ch/api/v1/"
-	vals := url.Values{}
-
-	vals.Add("query", "get_recent")
-	vals.Add("selector", "100")
-
 	for {
-		resp, err := http.Post(baseUrl, "application/x-www-form-urlencoded", strings.NewReader(vals.Encode()))
+		entries, err := baz.QueryLatest(context.Background(), baz.CountSelect)
 		if err != nil {
 			return err
 		}
 
-		content, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			return err
-		}
-
-		queryResults := MalbazaarResp{}
-
-		err = json.Unmarshal(content, &queryResults)
-		if err != nil {
-			return err
-		}
-
-		for _, s := range queryResults.Samples {
+		for _, s := range entries {
 			if !m.SeenQueue.doesExist(s.Sha256Hash) {
 				m.stream <- &s
 				m.SeenQueue.add(s.Sha256Hash)
 			}
 		}
-		time.Sleep(10 * time.Second)
+		time.Sleep(10 * time.Minute)
 	}
-
 }

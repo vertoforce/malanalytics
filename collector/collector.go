@@ -21,9 +21,9 @@ func (c *Collector) Start(logger *log.Logger) error {
 
 	c.SampleStream = masterMalwareChannel
 
-	for k, src := range c.selectedSources {
-		logger.Debugf("starting go routine for %s", k)
-		go src.Start()
+	for _, src := range c.selectedSources {
+		logger.Infof("starting go routine for %s", src)
+		go src.Start(logger)
 	}
 
 	return nil
