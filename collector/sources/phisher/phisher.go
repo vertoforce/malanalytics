@@ -117,8 +117,8 @@ func (p *Phisher) actuallyGetZip(logger *log.Logger) {
 		wg.Add(1)
 
 		go func() {
+			defer wg.Done()
 			for resp := range p.getFinalURLStream {
-				defer wg.Done()
 
 				requrl := resp.URLEntry.URL
 
